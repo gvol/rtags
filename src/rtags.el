@@ -410,6 +410,8 @@ to case differences."
 (define-key rtags-mode-map (kbd "q") 'rtags-bury-or-delete)
 (define-key rtags-mode-map (kbd "j") 'next-line)
 (define-key rtags-mode-map (kbd "k") 'previous-line)
+(define-key rtags-mode-map (kbd "n") 'next-line)
+(define-key rtags-mode-map (kbd "p") 'previous-line)
 
 (defvar rtags-dependency-tree-mode-map nil)
 (setq rtags-dependency-tree-mode-map (make-sparse-keymap))
@@ -483,7 +485,7 @@ to case differences."
     (,"^ +\\(.*\\)$"
      (1 font-lock-function-name-face))))
 
-(define-derived-mode rtags-mode fundamental-mode
+(define-derived-mode rtags-mode special-mode
   (set (make-local-variable 'font-lock-defaults)
        '(rtags-font-lock-keywords (save-excursion
                                     (goto-char (point-min))
@@ -1309,17 +1311,19 @@ to case differences."
             (t (switch-to-buffer file-or-buffer))))))
 
 (defun rtags-goto-line-col (line column)
-  (let ((old (point)))
-    (push-mark nil t)
-    (goto-char (point-min))
-    (condition-case nil
-        (progn
-          (forward-line (1- line))
-          (forward-char (1- column))
-          t)
-      (error
-       (goto-char old)
-       nil))))
+  (save-restriction
+    (widen)
+    (let ((old (point)))
+      (push-mark nil t)
+      (goto-char (point-min))
+      (condition-case nil
+          (progn
+            (forward-line (1- line))
+            (forward-char (1- column))
+            t)
+        (error
+         (goto-char old)
+         nil)))))
 
 (defun rtags-goto-location (location &optional nobookmark other-window)
   "Go to a location passed in. It can be either: file,12 or file:13:14 or plain file"
@@ -1515,6 +1519,9 @@ If called with a prefix restrict to current buffer"
   (let ((arg (rtags-current-location))
         (tagname (or (rtags-current-symbol) (rtags-current-token)))
         (fn (buffer-file-name)))
+    (when (and (not (looking-at "\\(\\s_\\|\\sw\\)"))
+               (looking-back "\\(\\s_\\|\\sw\\)" (- (point) 1)))
+      (setq arg (rtags-current-location (- (point) 1))))
     (rtags-reparse-file-if-needed)
     (with-current-buffer (rtags-get-buffer)
       (rtags-call-rc :path fn :path-filter prefix "-f" arg)
@@ -1544,6 +1551,9 @@ is true. References to references will be treated as references to the reference
   (rtags-location-stack-push)
   (let ((arg (rtags-current-location))
         (fn (buffer-file-name)))
+    (when (and (not (looking-at "\\(\\s_\\|\\sw\\)"))
+               (looking-back "\\(\\s_\\|\\sw\\)" (- (point) 1)))
+      (setq arg (rtags-current-location (- (point) 1))))
     (rtags-reparse-file-if-needed)
     (with-current-buffer (rtags-get-buffer)
       (rtags-call-rc :path fn :path-filter prefix "-r" arg (unless rtags-sort-references-by-input "--no-sort-references-by-input"))
@@ -1556,6 +1566,9 @@ is true. References to references will be treated as references to the reference
   (rtags-location-stack-push)
   (let ((arg (rtags-current-location))
         (fn (buffer-file-name)))
+    (when (and (not (looking-at "\\(\\s_\\|\\sw\\)"))
+               (looking-back "\\(\\s_\\|\\sw\\)" (- (point) 1)))
+      (setq arg (rtags-current-location (- (point) 1))))
     (rtags-reparse-file-if-needed)
     (with-current-buffer (rtags-get-buffer)
       (rtags-call-rc :path fn :path-filter prefix "-r" arg "-k" (unless rtags-sort-references-by-input "--no-sort-references-by-input"))
@@ -1567,6 +1580,9 @@ is true. References to references will be treated as references to the reference
   (rtags-location-stack-push)
   (let ((arg (rtags-current-location))
         (fn (buffer-file-name)))
+    (when (and (not (looking-at "\\(\\s_\\|\\sw\\)"))
+               (looking-back "\\(\\s_\\|\\sw\\)" (- (point) 1)))
+      (setq arg (rtags-current-location (- (point) 1))))
     (rtags-reparse-file-if-needed)
     (with-current-buffer (rtags-get-buffer)
       (rtags-call-rc :path fn :path-filter prefix "-r" arg "-e"
