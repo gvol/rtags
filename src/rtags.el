@@ -76,7 +76,7 @@
 
 (defun rtags-is-indexable-default (buffer)
   (let ((filename (buffer-file-name buffer)))
-    (when filename
+    (when (and filename (file-exists-p filename))
       (let ((suffix (and (string-match "\.\\([^.]+\\)$" filename) (match-string 1 filename))))
         (or (not suffix)
             (and (member (downcase suffix) (list "cpp" "h" "cc" "c" "cp" "cxx" "m" "mm" "tcc" "txx" "moc" "hxx" "hh" "hpp")) t))))))
@@ -640,7 +640,9 @@ to case differences."
                        silent-query
                        &allow-other-keys)
   (save-excursion
-    (let ((rc (rtags-executable-find "rc")) proc)
+    (let ((rc (rtags-executable-find "rc"))
+          (default-directory (expand-file-name "~/"))
+          proc)
       (if (not rc)
           (unless noerror (error "Can't find rc"))
         (when (and async (not (consp async)))
